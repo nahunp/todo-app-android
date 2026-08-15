@@ -143,18 +143,27 @@ different or Android-specific.
 
 ## Firebase — wired, not configured
 
-`app/build.gradle.kts` applies `google-services` and
-`firebase-crashlytics`, and depends on the Crashlytics/Analytics/
-Messaging SDKs — **but there is no real Firebase project behind any of
-it**. Both plugins fail the build immediately with a clear error if
-`app/google-services.json` doesn't exist (gitignored, never committed —
-same secrets-never-in-source policy as the web repo). To make this real:
+`app/build.gradle.kts` depends on the Crashlytics/Analytics/Messaging
+SDKs, but **there is no real Firebase project behind any of it yet**, and
+`app/google-services.json` is gitignored, never committed (same
+secrets-never-in-source policy as the web repo). The `google-services`
+and `firebase-crashlytics` *plugins* are only applied when that file
+exists (`if (file("google-services.json").exists())` in
+`app/build.gradle.kts`) — **this used to be a hard build failure instead**
+(both plugins fail the *entire* build, not just Firebase features,
+without that file — Diego hit this directly trying to open the project in
+Android Studio right after the initial scaffold) — fixed once, don't
+revert it back to unconditional `alias(...)` application. Firebase code
+still compiles fine either way (the SDKs are just libraries on the
+classpath); it just won't initialize without a real project. To make it
+real:
 
 1. Create a Firebase project (Firebase console — needs your own Google
    account; this is account-creation territory, not something an agent
    should do on your behalf).
 2. Add an Android app to it with package name `com.nahunp.todoapp`.
-3. Download the real `google-services.json`, drop it in `app/`.
+3. Download the real `google-services.json`, drop it in `app/` — the
+   plugins activate automatically next build, no other change needed.
 4. `core/notifications/TodoFirebaseMessagingService.kt` is a stub —
    `onNewToken`/`onMessageReceived` just log, they don't do anything real
    yet. Needs: a backend endpoint to receive/store a device's FCM token
@@ -165,10 +174,8 @@ same secrets-never-in-source policy as the web repo). To make this real:
    real first-run flow once there's an actual notification worth asking
    permission for.
 
-CI (`android-ci.yml`) writes a syntactically-valid but functionally-inert
-placeholder `google-services.json` so the build can run at all — never a
-real project's config, and that placeholder is not what local development
-should use once you have a real project.
+CI (`android-ci.yml`) doesn't need a placeholder file anymore either —
+it builds the same way any fresh clone does, Firebase present but inert.
 
 ## Open questions (need a decision, not yet made)
 

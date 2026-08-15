@@ -49,11 +49,11 @@ first time you open the project).
 ./gradlew :app:assembleDebug
 ```
 
-Firebase-backed features won't build without your own
-`app/google-services.json` (gitignored, never committed) — see
-`CLAUDE.md`'s Firebase section for how to get one. To build without it,
-comment out the `google-services`/`firebase-crashlytics` plugin lines in
-`app/build.gradle.kts` temporarily.
+The build works fine without a real Firebase project — Firebase just
+stays inert (no Crashlytics/Analytics/Messaging) until you add your own
+`app/google-services.json` (gitignored, never committed). See
+`CLAUDE.md`'s Firebase section for how to get one; nothing else needs to
+change once you do.
 
 By default the debug build points at `10.0.2.2:5080` (the Android
 emulator's alias for your host machine's localhost) — run the

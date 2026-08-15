@@ -24,37 +24,12 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      # A real google-services.json is never committed (see .gitignore and
-      # CLAUDE.md's Firebase section) — google-services/firebase-crashlytics
-      # fail the build without one. This is Cloudflare's-test-key-style
-      # placeholder equivalent, but Firebase has no published always-passes
-      # test config the way Turnstile does, so CI writes a syntactically
-      # valid, functionally-inert one instead, just so the build can run at
-      # all. Never a real project's config.
-      - name: Write placeholder google-services.json
-        run: |
-          cat > app/google-services.json <<'EOF'
-          {
-            "project_info": {
-              "project_number": "000000000000",
-              "project_id": "todoapp-ci-placeholder",
-              "storage_bucket": "todoapp-ci-placeholder.appspot.com"
-            },
-            "client": [
-              {
-                "client_info": {
-                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
-                  "android_client_info": { "package_name": "com.nahunp.todoapp" }
-                },
-                "oauth_client": [],
-                "api_key": [{ "current_key": "AIzaSyPLACEHOLDERPLACEHOLDERPLACEHOLDERx" }],
-                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
-              }
-            ],
-            "configuration_version": "1"
-          }
-          EOF
-
+      # No google-services.json here on purpose (never committed — see
+      # .gitignore and CLAUDE.md's Firebase section). app/build.gradle.kts
+      # only applies the google-services/firebase-crashlytics plugins when
+      # that file exists, so CI builds the same way any fresh clone does:
+      # Firebase present on the classpath but inert. This is the actual
+      # default developer experience, not a workaround for it.
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 

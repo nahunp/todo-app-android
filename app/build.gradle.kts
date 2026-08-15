@@ -6,12 +6,35 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
-    // Both of these need app/google-services.json to exist — the build will
-    // fail with a clear "File google-services.json is missing" error until
-    // you add your own (Firebase console -> Project settings -> your app ->
-    // download google-services.json). See CLAUDE.md's Firebase section.
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.crashlytics)
+    // apply false here, applied conditionally below — both plugins fail the
+    // ENTIRE build hard (not just Firebase features) if app/
+    // google-services.json doesn't exist, which made this project
+    // unbuildable out of the box before a real Firebase project was set
+    // up. Confirmed live: without this, `./gradlew :app:assembleDebug`
+    // fails at :app:processDebugGoogleServices before compiling a single
+    // Kotlin file, which is exactly the error Diego hit trying to run this
+    // in Android Studio.
+    alias(libs.plugins.google.services) apply false
+    alias(libs.plugins.firebase.crashlytics) apply false
+}
+
+// See the comment above — only wire up Firebase once there's a real
+// project config to wire up. Firebase's SDKs (dependencies below) are
+// still on the classpath either way, so code referencing them still
+// compiles; they just won't initialize without this. Get your own
+// google-services.json from the Firebase console and drop it in app/ —
+// see CLAUDE.md's Firebase section — and this flips on automatically,
+// no other change needed.
+val hasFirebaseConfig = file("google-services.json").exists()
+if (hasFirebaseConfig) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
+} else {
+    logger.warn(
+        "app/google-services.json not found — building without Firebase " +
+            "(Crashlytics/Analytics/Messaging won't initialize). See " +
+            "CLAUDE.md's Firebase section to set up a real project."
+    )
 }
 
 android {
