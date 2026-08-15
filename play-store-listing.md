@@ -51,13 +51,38 @@ address you registered the Play Console account with)
 https://zealous-meadow-0c73a9610.7.azurestaticapps.net/privacy
 ```
 
+## Release notes (per-upload "what's new" — max 500 chars)
+
+For the v1.0.0 upload:
+```
+First release. Create and manage todo lists with priority, due dates,
+and categories. Works fully offline — changes sync automatically once
+you're back online. Same account as the web version — your lists stay
+in sync across both.
+```
+
 ## Store listing graphics
 
 **App icon (512×512)**: [`play-store-assets/icon-512.png`](play-store-assets/icon-512.png)
 — solid `#4E76AC` background, bold white checkmark. Same mark as the
 in-app launcher icon, just at the flat listing size/format Play Console
-wants (no adaptive-icon layers). Feature graphic (1024×500) and
-screenshots aren't produced yet — add before actual submission.
+wants (no adaptive-icon layers).
+
+**Feature graphic (1024×500)**: [`play-store-assets/feature-graphic.png`](play-store-assets/feature-graphic.png)
+— same mark + wordmark + a one-line tagline ("Your lists, online or
+offline"), on the same accent background. Placeholder-simple, not
+professionally designed, same honesty as the app icon.
+
+**Screenshots**: [`play-store-assets/screenshots/`](play-store-assets/screenshots/)
+— real captures from the emulator (2026-08-15), not mockups: the list
+overview and a list detail with mixed priority/category/done state.
+Informal reference quality, not final — both have a stray floating
+toolbar artifact in the bottom-left corner from a Gboard/emulator IME
+bug unrelated to the app (confirmed by disabling Gboard, which cleared
+it, then it reappeared on the next text field focus). Worth recapturing
+cleanly via Android Studio's own device screenshot tool (no known IME
+quirk there) before actual submission, rather than treating these as
+final.
 
 ## Content rating questionnaire — expected answers
 

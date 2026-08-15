@@ -245,6 +245,20 @@ this is the long one.
   modes) is covered; the mechanical `when`-branch mapping in
   `applyOperation` isn't, deliberately (low risk, would just be
   restating the code).
+- **Verified live end to end, not just unit-tested** (2026-08-15, real
+  emulator against the real production backend, `svc wifi disable`/
+  `svc data disable` — not just closing the app, since that doesn't
+  actually kill the radios): registered a throwaway account through the
+  real Turnstile widget, created a list and an item online, then went
+  offline and added another item + changed its priority — the "Offline —
+  N changes will sync" line appeared immediately and updated per
+  mutation. Reconnected: the queue drained, the status line cleared on
+  its own. Force-stopped and relaunched the app afterward specifically to
+  force a *fresh pull that overwrites the local cache* — the offline-made
+  changes were still there, which is the actual proof they'd reached the
+  server (a caching bug could easily fake "it still shows up," a
+  cache-overwriting pull can't). Cleaned up by deleting the test account
+  and confirming a follow-up login attempt failed.
 
 ## Release signing — configured, first real signed build verified live
 
@@ -277,6 +291,17 @@ plugins above.
   (`jar verified.` — the self-signed-cert/no-timestamp warnings jarsigner
   prints are normal and expected for any Android app signing key, not
   specific to this one).
+- **Versioning**: `versionName` went straight to `1.0.0` rather than
+  incrementing through more 0.x releases — this build (2026-08-15) is the
+  actual release candidate going into Play Console closed testing, not a
+  pre-1.0 preview. `versionCode` starts at 1 and increases by one per
+  Play Console upload regardless of track (closed testing included) —
+  never reset it, never reuse a number. `RELEASES.md` has the full v1.0.0
+  writeup; `docs/play-store-testing-plan.md` is the living checklist for
+  what's left before/during the closed testing track itself (tester
+  recruitment, the exact tester-count/day requirement — confirm that
+  number live in Console, it's changed before and isn't hardcoded here on
+  purpose).
 
 ## Gradle gotcha: `buildConfigField` entries are alphabetized
 

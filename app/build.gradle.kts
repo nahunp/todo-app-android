@@ -62,8 +62,15 @@ android {
         applicationId = "com.nahunp.todoapp"
         minSdk = 26
         targetSdk = 37
+        // 1.0.0, not another 0.x bump -- this is the actual release
+        // candidate going into Play Console closed testing, not an
+        // interim scaffold version. versionCode stays at 1 since nothing
+        // has ever been uploaded to Play Console yet (blocked on Diego's
+        // identity verification) -- it's the true first upload. Bump it
+        // for every subsequent upload regardless of track, per Play
+        // Console's requirement that it only ever increases.
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
