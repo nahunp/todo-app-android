@@ -2,7 +2,9 @@
 
 Read this first, every session. Durable reference — architecture,
 conventions, gotchas already learned the hard way — not a changelog. Keep
-it about what's *true now* and *why*.
+it about what's *true now* and *why*. History (what happened, which
+commit, when) lives in `docs/daily-notes/`, not here — same split, same
+reasoning, as the web repo.
 
 ## What this repo is
 
