@@ -49,25 +49,31 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // Same runtime-config idea as the web frontend's window.__appConfig /
-        // public/config.js (see the web repo's runtime-config.ts doc
-        // comment) — but for a native app, build-time BuildConfig fields are
-        // the right tool, not a runtime-fetched file: there's no equivalent
-        // of "redeploy without rebuilding" for an installed APK the way
-        // there is for a static web bundle. Override per build type below,
-        // not hardcoded once here.
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:5080\"")
     }
+
+    // Same runtime-config idea as the web frontend's window.__appConfig /
+    // public/config.js (see the web repo's runtime-config.ts doc comment)
+    // — but for a native app, build-time BuildConfig fields are the right
+    // tool, not a runtime-fetched file: there's no equivalent of "redeploy
+    // without rebuilding" for an installed APK the way there is for a
+    // static web bundle.
+    //
+    // Debug default is the REAL production backend, not localhost — a
+    // real phone (physical device, not the emulator) can't reach
+    // 10.0.2.2 at all (that address only means anything to the emulator),
+    // and testing against production is what actually happened first
+    // (confirmed live: "server not reachable" on a real device against
+    // the emulator-only address). For local-backend testing instead —
+    // emulator, or a real device on the same Wi-Fi as the dev machine —
+    // override per-run rather than editing this file:
+    //   ./gradlew :app:installDebug -PapiBaseUrl=http://10.0.2.2:5080
+    //   ./gradlew :app:installDebug -PapiBaseUrl=http://<host-LAN-ip>:5080
+    val apiBaseUrl = (project.findProperty("apiBaseUrl") as String?)
+        ?: "https://todoapp-api-us3zbx.azurewebsites.net"
 
     buildTypes {
         debug {
-            // 10.0.2.2 is the Android emulator's alias for the host
-            // machine's localhost — for a physical device on the same
-            // network as the local backend, override this per-run with
-            // -PapiBaseUrl=http://<host-lan-ip>:5080 instead of editing
-            // this file.
-            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:5080\"")
+            buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
         }
         release {
             isMinifyEnabled = true
