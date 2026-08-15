@@ -51,6 +51,14 @@ address you registered the Play Console account with)
 https://zealous-meadow-0c73a9610.7.azurestaticapps.net/privacy
 ```
 
+## Store listing graphics
+
+**App icon (512×512)**: [`play-store-assets/icon-512.png`](play-store-assets/icon-512.png)
+— solid `#4E76AC` background, bold white checkmark. Same mark as the
+in-app launcher icon, just at the flat listing size/format Play Console
+wants (no adaptive-icon layers). Feature graphic (1024×500) and
+screenshots aren't produced yet — add before actual submission.
+
 ## Content rating questionnaire — expected answers
 
 Google's questionnaire is asked interactively in Console, but every
