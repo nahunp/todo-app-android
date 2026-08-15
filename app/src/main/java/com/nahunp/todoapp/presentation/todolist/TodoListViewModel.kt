@@ -3,6 +3,7 @@ package com.nahunp.todoapp.presentation.todolist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nahunp.todoapp.core.network.ApiException
+import com.nahunp.todoapp.domain.repository.AuthRepository
 import com.nahunp.todoapp.domain.repository.TodoListRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class TodoListViewModel @Inject constructor(
     private val repository: TodoListRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TodoListUiState())
@@ -60,6 +62,13 @@ class TodoListViewModel @Inject constructor(
             } catch (e: ApiException) {
                 _uiState.update { it.copy(error = e.message) }
             }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            authRepository.logout()
+            _uiState.update { it.copy(loggedOut = true) }
         }
     }
 }

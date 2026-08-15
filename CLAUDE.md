@@ -192,17 +192,22 @@ it builds the same way any fresh clone does, Firebase present but inert.
   repo owns `RegisterCommand`), not just an Android-side one — this is
   explicitly the one piece the "shared backend" decision (see below)
   still requires client-type-aware handling for, not a separate backend.
-- **No auth guard equivalent yet.** The web frontend has a functional
-  route guard (`authGuard`, redirects to `/login` if unauthenticated) —
-  `TodoNavHost` here always starts at Login regardless of whether a
-  valid token already exists in `TokenStore`. Straightforward to add
-  (check `AuthRepository.isAuthenticated` on launch), just not done in
-  the initial scaffold.
-- **No detail screen.** `Destination.TodoListDetail` exists as a route
-  but `TodoNavHost` doesn't navigate to it yet — `TodoListScreen`'s
-  "open list" action is a no-op `TODO`. Priority/due-date/category
-  editing UI (the whole point of those fields on the backend) doesn't
-  exist on the Android side at all yet.
+- ~~No auth guard~~ **Done** — `AppEntryViewModel` checks
+  `AuthRepository.isAuthenticated` once before `NavHost` is even composed
+  (Compose Navigation needs a concrete `startDestination` up front, so
+  this is a one-shot "what's the first screen" check, not a full
+  per-navigation route guard like the web frontend's `authGuard` —
+  a token going stale *mid-session* still just fails requests with 401
+  until the user manually logs out and back in; no redirect-on-expiry
+  yet). `TodoListScreen` also got a Logout action it didn't have before,
+  since without one there was no way back to Login to test any of this.
+- ~~No detail screen~~ **Done** — `TodoListDetailScreen` +
+  `TodoListDetailViewModel`: add/remove items, toggle done, and
+  priority/category (tap-to-cycle through values) and due date
+  (Material3 `DatePickerDialog`) editing. Building this surfaced real
+  bugs in the initial scaffold's assumed contract, now fixed and worth
+  knowing about — see "Contract bugs found building the detail screen"
+  below.
 - **No offline story.** Every screen hits the network directly, no local
   cache/Room database. Fine for a template; a real app probably wants at
   least a "show the last-known list while refreshing" cache before this
@@ -210,6 +215,36 @@ it builds the same way any fresh clone does, Firebase present but inert.
 - **No double-submit guard** on delete (same open item as the web
   frontend's own daily notes flagged for its delete button, also still
   unfixed there as of this writing).
+- **Priority/category editing is tap-to-cycle, not a picker.** Works, but
+  a dropdown (category) and a segmented control (priority) would be a
+  more honest UI than "tap repeatedly and hope." Deliberately simple for
+  a first pass, not a final design.
+
+## Contract bugs found building the detail screen
+
+The initial scaffold's DTOs were written against an *assumed* shape of
+the backend contract, not checked against it — building a feature that
+actually exercises every field surfaced three real mismatches, found by
+checking `docs/api/openapi.json` (the web repo's committed, authoritative
+contract) directly rather than continuing to guess:
+
+- **The "is this item done" field is `isDone`, not `isComplete`.**
+  `TodoItem`/`TodoItemDto` had the wrong name from the start; also
+  missing `notes` and `completedAt` entirely, both present on the
+  backend since the beginning.
+- **`complete`/`reopen` are `POST`, not `PATCH`.** Both were declared as
+  `@PATCH` in `TodoApiService`, unverified, since nothing had exercised
+  those specific calls yet.
+- **`POST /todolists` and `POST /todolists/{id}/items` return only
+  `{ "id": <int> }`**, not the full created object — `createTodoList`
+  was declared to return a full `TodoListDto`, which would have failed
+  to deserialize the moment it was actually called with a real response.
+- **The lesson**: a DTO that compiles and "looks right" proves nothing
+  about whether it matches the real contract — check the actual response
+  shape (`docs/api/openapi.json`, or the live API) before trusting a
+  guessed field name, the same reasoning as this repo's own "verify
+  live, not just reads correctly" process rule, just not followed
+  closely enough the first time around.
 
 ## Process (inherited from the web repo, unless noted)
 

@@ -7,4 +7,5 @@ data class TodoListUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val newListName: String = "",
+    val loggedOut: Boolean = false,
 )

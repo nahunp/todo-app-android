@@ -5,13 +5,19 @@ import java.time.Instant
 /**
  * Mirrors the backend's TodoItemDto (GetTodoListQuery.cs) exactly — same
  * fields, same enum names. The backend is the source of truth for this
- * shape (see docs/api/openapi.json in the web repo); this is the Kotlin
- * side of that same contract, not an independent design.
+ * shape (see docs/api/openapi.json in the web repo, which is what this
+ * was actually checked against — NOT the field names guessed at scaffold
+ * time, which had this wrong: the boolean field is `isDone`, not
+ * `isComplete`, and `notes`/`completedAt` existed on the backend from the
+ * start but were missing here entirely until this was checked against the
+ * real contract).
  */
 data class TodoItem(
     val id: Int,
     val title: String,
-    val isComplete: Boolean,
+    val notes: String?,
+    val isDone: Boolean,
+    val completedAt: Instant?,
     val priority: Priority,
     val dueDate: Instant?,
     val dueDateState: DueDateState,
