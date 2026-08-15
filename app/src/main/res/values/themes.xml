@@ -1,0 +1,6 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base theme only exists to satisfy the manifest/AndroidManifest.xml's
+         android:theme before Compose's first frame — MainActivity's actual
+         Compose content (TodoAppTheme) is what really controls colors. -->
+    <style name="Theme.TodoApp" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

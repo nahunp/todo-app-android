@@ -1,0 +1,18 @@
+*.iml
+.gradle/
+/local.properties
+.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Firebase — never commit real project config. See CLAUDE.md's Firebase
+# section for why and how to get your own.
+app/google-services.json
+
+# Build outputs
+*.apk
+*.aab

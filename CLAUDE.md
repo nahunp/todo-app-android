@@ -1,0 +1,211 @@
+# CLAUDE.md
+
+Read this first, every session. Durable reference — architecture,
+conventions, gotchas already learned the hard way — not a changelog. Keep
+it about what's *true now* and *why*.
+
+## What this repo is
+
+The Android client for the same TodoApp product as
+[`nahunp/todo-app`](https://github.com/nahunp/todo-app) (the web repo:
+.NET backend + Angular frontend, deployed to Azure) — same features, same
+backend API, same account system. Different repo on purpose: this is a
+genuinely separate client with its own build system, its own
+architecture decisions, and its own release cadence, not a folder that
+happens to share a monorepo. The web repo's backend is the one and only
+source of truth for the API contract (`docs/api/openapi.json` there);
+this repo consumes it, never redefines it.
+
+**Read the web repo's CLAUDE.md too, at least once.** Auth model,
+ownership rules (404 not 403 for non-owners), the enums-serialize-as-
+strings convention, the API versioning rationale, the secrets policy —
+all inherited from there, not re-derived here. This file only covers what's
+different or Android-specific.
+
+## Environment reality (verified live, this machine)
+
+- Android Studio + SDK already installed. SDK at
+  `%LOCALAPPDATA%\Android\Sdk`. Only platform installed at scaffold time:
+  **android-37**, build-tools **36.0.0** — `compileSdk`/`targetSdk` are set
+  to 37 to match, not to some assumed "current" value. Check what's
+  actually installed (`ls $SDK/platforms`) before bumping either.
+- **No standalone JDK on this machine** — only the JBR (JetBrains Runtime)
+  bundled inside Android Studio, at
+  `C:\Program Files\Android\Android Studio\jbr`, currently JDK **25**.
+  Running Gradle from a terminal (not Android Studio itself) needs
+  `JAVA_HOME` pointed there explicitly.
+- **That JDK 25 + Gradle/AGP version combo took real trial and error to
+  get working** — worth recording in full since it cost three failed
+  attempts:
+  1. Gradle 8.9 (and 8.13) both threw `IllegalArgumentException: 25.0.2`
+     from deep inside the Kotlin Gradle Plugin's vendored
+     `JavaVersion.parse` — that utility didn't understand a JDK 25 version
+     string. Not a Gradle-core issue; a Kotlin-plugin-bundled one.
+  2. Bumped to Gradle **9.7.0** (real current stable at the time — checked
+     live via `https://services.gradle.org/versions/current`, don't
+     assume, that endpoint is free to hit again) and Kotlin **2.4.10**
+     (real latest stable, checked via Maven Central's
+     `maven-metadata.xml` for `org.jetbrains.kotlin:kotlin-gradle-plugin`)
+     — fixed the JDK parsing, but then AGP **8.13.2** failed with: *"Plugin
+     'com.android.internal.application' relies on
+     'org.gradle.api.problems.internal.InternalProblems', a Gradle
+     internal API that was removed in Gradle 9.6.0."* AGP 8.x is not
+     compatible with Gradle 9.6+.
+  3. Bumped AGP to **9.3.1** (real latest stable) to match — but AGP 9.x
+     has **Kotlin support built in** and refuses to coexist with the
+     separate `org.jetbrains.kotlin.android` plugin ("no longer required
+     since AGP 9.0" — a hard error, not a warning). Removed that plugin
+     from both `build.gradle.kts` files; `kotlin.serialization` and
+     `kotlin.plugin.compose` are still separate plugins and still needed.
+  4. Only after all three fixes did `./gradlew :app:assembleDebug`
+     actually succeed — confirmed live, not assumed, including a real
+     `kspDebugKotlin` run (Hilt codegen) and a produced
+     `app-debug.apk`.
+  - **The lesson, not just the fix**: don't trust remembered/trained
+    version numbers for fast-moving tooling (Gradle, AGP, Kotlin) — check
+    live (Maven Central `maven-metadata.xml`, `services.gradle.org`)
+    before pinning, the same way the web repo's CLAUDE.md says to actually
+    run code rather than assume a diff is correct.
+- `local.properties` (gitignored) needs `sdk.dir=<path>` pointing at the
+  SDK — not committed, machine-specific by design (same reasoning as the
+  web repo never committing a real connection string).
+
+## Stack
+
+- **Jetpack Compose** (not Views/XML layouts) + **Material 3**.
+- **Clean Architecture**, adapted from the web repo's backend layering,
+  not copied 1:1 (there's no "no PackageReference" project-reference
+  enforcement here — Gradle module boundaries would be the equivalent if
+  this ever splits into multiple Gradle modules; it's single-module today,
+  package-only separation):
+  - `domain/` — models, repository *interfaces*, no Android framework
+    dependencies.
+  - `data/` — DTOs (`data/remote/dto/`), repository *implementations*,
+    the Retrofit service interface (`core/network/`).
+  - `presentation/` — one package per feature (`auth/login/`,
+    `auth/register/`, `todolist/`), each with a `UiState` data class, a
+    `@HiltViewModel`, and a `@Composable` screen — same three-file
+    pattern every time, follow it for new features rather than inventing
+    a new shape per screen.
+  - `di/` — Hilt modules. `core/network/NetworkModule.kt` and
+    `core/datastore/DataStoreModule.kt` provide infrastructure;
+    `di/RepositoryModule.kt` is the only place interface->impl binding
+    happens.
+- **Hilt** for DI (not manual/Koin) — `@HiltAndroidApp` on
+  `TodoApplication`, `@AndroidEntryPoint` on `MainActivity`,
+  `@HiltViewModel` on every ViewModel, `hiltViewModel()` in Compose to
+  obtain them.
+- **Retrofit + OkHttp + kotlinx.serialization** (not Moshi/Gson) — one
+  `TodoApiService` interface mirroring the backend's `/api/v1` routes
+   route-for-route.
+- **DataStore** (not SharedPreferences directly) for the access token —
+  see `core/datastore/TokenStore.kt`'s doc comment for why.
+- **Firebase**: Crashlytics + Cloud Messaging (notifications) + Analytics.
+  See the dedicated section below — the Gradle wiring exists, a real
+  project does not yet.
+
+## Backend contract — inherited, not redesigned
+
+- Base URL is build-time (`BuildConfig.API_BASE_URL`,
+  `app/build.gradle.kts`), not runtime like the web frontend's
+  `window.__appConfig` — there's no equivalent of "redeploy the static
+  bundle without rebuilding" for an installed APK, so build-time
+  `buildConfigField` per build type is the *correct* adaptation here, not
+  a missed opportunity to copy the web pattern. Debug points at
+  `10.0.2.2:5080` (emulator's host-loopback alias); release points at the
+  real Azure origin.
+- Enums arrive as **string names** (`"High"`, `"Overdue"`), matching the
+  backend's `JsonStringEnumConverter` — `domain/model/TodoItem.kt`'s enum
+  constant names are spelled to match exactly (case-sensitive) so
+  `Priority.valueOf(dto.priority)` just works without a custom
+  serializer. If the backend ever adds a new enum value, this needs a
+  matching addition here — nothing enforces that automatically across
+  repos the way a single shared type would.
+- Error responses are `ProblemDetails`/`ValidationProblemDetails` JSON
+  (see the web repo's `GlobalExceptionHandler.cs`) — `core/network/
+  ApiError.kt` parses `detail`/`errors`/`title` out of them, same
+  reasoning as the web repo's `shared/http-error.ts` and the bug it was
+  written to fix (see that repo's `fix/auth-loading-and-error-states`
+  PR) — never show a bare HTTP status if the backend sent a real reason.
+- No refresh tokens on the backend (60-minute access token only,
+  deliberate v1 scope) — this app doesn't do anything special about that
+  yet either; a token going stale mid-session just starts failing
+  requests with 401 until the user logs in again. Worth a real "session
+  expired, please log in again" UX once this matters.
+
+## Firebase — wired, not configured
+
+`app/build.gradle.kts` applies `google-services` and
+`firebase-crashlytics`, and depends on the Crashlytics/Analytics/
+Messaging SDKs — **but there is no real Firebase project behind any of
+it**. Both plugins fail the build immediately with a clear error if
+`app/google-services.json` doesn't exist (gitignored, never committed —
+same secrets-never-in-source policy as the web repo). To make this real:
+
+1. Create a Firebase project (Firebase console — needs your own Google
+   account; this is account-creation territory, not something an agent
+   should do on your behalf).
+2. Add an Android app to it with package name `com.nahunp.todoapp`.
+3. Download the real `google-services.json`, drop it in `app/`.
+4. `core/notifications/TodoFirebaseMessagingService.kt` is a stub —
+   `onNewToken`/`onMessageReceived` just log, they don't do anything real
+   yet. Needs: a backend endpoint to receive/store a device's FCM token
+   per user (doesn't exist in the .NET backend yet — this is Android-side
+   plumbing only so far), and an actual notification-building step.
+5. The `POST_NOTIFICATIONS` runtime permission (Android 13+) is declared
+   in the manifest but never requested at runtime — wire that into a
+   real first-run flow once there's an actual notification worth asking
+   permission for.
+
+CI (`android-ci.yml`) writes a syntactically-valid but functionally-inert
+placeholder `google-services.json` so the build can run at all — never a
+real project's config, and that placeholder is not what local development
+should use once you have a real project.
+
+## Open questions (need a decision, not yet made)
+
+- **CAPTCHA on registration.** The backend's `RegisterCommand` requires a
+  verified Cloudflare Turnstile token (web repo, `Auth` section in its
+  CLAUDE.md). There's no Android SDK for Turnstile. `RegisterViewModel`
+  currently sends an empty token, which the backend will always reject.
+  Real options, not yet decided between: (a) host the Turnstile challenge
+  in a `WebView` and extract the token via a JS bridge, (b) use a
+  mobile-native attestation approach (Play Integrity API) for this
+  platform only, gated server-side by client type, or (c) drop the
+  CAPTCHA requirement for mobile clients specifically and lean on
+  rate-limiting instead. This needs a backend-side decision too (the web
+  repo owns `RegisterCommand`), not just an Android-side one.
+- **No auth guard equivalent yet.** The web frontend has a functional
+  route guard (`authGuard`, redirects to `/login` if unauthenticated) —
+  `TodoNavHost` here always starts at Login regardless of whether a
+  valid token already exists in `TokenStore`. Straightforward to add
+  (check `AuthRepository.isAuthenticated` on launch), just not done in
+  the initial scaffold.
+- **No detail screen.** `Destination.TodoListDetail` exists as a route
+  but `TodoNavHost` doesn't navigate to it yet — `TodoListScreen`'s
+  "open list" action is a no-op `TODO`. Priority/due-date/category
+  editing UI (the whole point of those fields on the backend) doesn't
+  exist on the Android side at all yet.
+- **No offline story.** Every screen hits the network directly, no local
+  cache/Room database. Fine for a template; a real app probably wants at
+  least a "show the last-known list while refreshing" cache before this
+  ships.
+- **No double-submit guard** on delete (same open item as the web
+  frontend's own daily notes flagged for its delete button, also still
+  unfixed there as of this writing).
+
+## Process (inherited from the web repo, unless noted)
+
+- **Secrets**: never ask for one in chat, never hardcode one, never
+  accept a pasted API key/token/connection-string-equivalent as a "fix."
+  `google-services.json` follows this rule same as the web repo's
+  connection strings — say where it goes (`app/`, gitignored), the human
+  drops the real file in themselves.
+- **Verify live, not just "reads correctly."** This repo's own Gradle/AGP
+  saga above is the proof: guessed version numbers failed three times in
+  a row; only checking live metadata and actually running
+  `./gradlew assembleDebug` found the real, current, compatible set.
+- **Branching/CI**: single `android-ci.yml` for now (build debug + unit
+  test on every push and PR) — no multi-branch promotion pipeline yet
+  like the web repo's `development`→`release`→`master`. Worth adopting
+  once this repo has enough real activity to justify it, not before.
