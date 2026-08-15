@@ -54,6 +54,17 @@ class TodoListViewModel @Inject constructor(
         }
     }
 
+    fun renameList(id: Int, newName: String) {
+        viewModelScope.launch {
+            try {
+                repository.renameTodoList(id, newName)
+                load()
+            } catch (e: ApiException) {
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
+    }
+
     fun deleteList(id: Int) {
         viewModelScope.launch {
             try {

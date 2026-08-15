@@ -173,6 +173,24 @@ plugins above.
   prints are normal and expected for any Android app signing key, not
   specific to this one).
 
+## Gradle gotcha: `buildConfigField` entries are alphabetized
+
+Found live building the Terms/Privacy links: `app/build.gradle.kts` had
+`FRONTEND_BASE_URL` declared first, with `CAPTCHA_PAGE_URL`/`TERMS_URL`/
+`PRIVACY_URL` referencing it (`FRONTEND_BASE_URL + "/terms"`, etc.) to
+avoid repeating the domain. Compiled fine at the Gradle-script level, but
+failed with a genuine javac **"illegal forward reference"** — AGP
+alphabetizes `buildConfigField` entries in the *generated* `BuildConfig.java`
+regardless of the order they're declared in `build.gradle.kts`, which put
+`CAPTCHA_PAGE_URL` (referencing `FRONTEND_BASE_URL`) *before*
+`FRONTEND_BASE_URL`'s own declaration in the actual output file. Confirmed
+by reading the generated file directly, not guessed. Fix: don't
+cross-reference between `buildConfigField` entries at all — each URL is
+spelled out in full instead. If a shared base ever seems worth it again,
+it needs to be a Kotlin `val` in the build script (interpolated into each
+field's string at generation time), not a reference to another generated
+field.
+
 ## Firebase — wired, not configured
 
 `app/build.gradle.kts` depends on the Crashlytics/Analytics/Messaging
@@ -238,6 +256,15 @@ it builds the same way any fresh clone does, Firebase present but inert.
   bugs in the initial scaffold's assumed contract, now fixed and worth
   knowing about — see "Contract bugs found building the detail screen"
   below.
+- ~~No rename UI~~ **Done** — `RenameDialog` (shared, `presentation/
+  components/`) covers all three cases the backend already supported but
+  had no UI trigger for: rename a list (from `TodoListScreen`'s row and
+  from `TodoListDetailScreen`'s title — tap either), and rename an item
+  (tap its title on the detail screen).
+- ~~No in-app Terms/Privacy~~ **Done** — `LegalWebViewScreen` loads the
+  web repo's actual `/terms`/`/privacy` pages via `WebView`
+  (`BuildConfig.TERMS_URL`/`PRIVACY_URL`), same reuse-not-duplicate
+  reasoning as the CAPTCHA page. Linked from both Login and Register.
 - **No offline story.** Every screen hits the network directly, no local
   cache/Room database. Fine for a template; a real app probably wants at
   least a "show the last-known list while refreshing" cache before this
@@ -249,6 +276,17 @@ it builds the same way any fresh clone does, Firebase present but inert.
   a dropdown (category) and a segmented control (priority) would be a
   more honest UI than "tap repeatedly and hope." Deliberately simple for
   a first pass, not a final design.
+- **App icon is legible now, not designed.** Fixed a real problem
+  (thin blue linework on a light background didn't read at actual
+  launcher sizes) by switching to solid accent background + bold white
+  checkmark — but it's still a placeholder glyph, not branded artwork.
+  Also still missing: the 512×512 PNG the Play Store listing itself
+  needs (separate from the APK's adaptive icon) — couldn't produce one
+  from this environment (no image rasterization tooling, and the
+  in-app Browser pane wasn't available to screenshot an SVG render).
+  Easiest path: Android Studio's own Image Asset wizard (right-click
+  `res` → New → Image Asset), which generates this from the same
+  vector source and is the standard tool for exactly this job anyway.
 - **Dark mode is forced off** (`TodoAppTheme` no longer reads
   `isSystemInDarkTheme()` at all — see `Theme.kt`'s doc comment).
   Confirmed live on a real device with system dark mode on: text and

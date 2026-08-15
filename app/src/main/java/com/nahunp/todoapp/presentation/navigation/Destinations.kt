@@ -7,4 +7,6 @@ sealed class Destination(val route: String) {
     data object TodoListDetail : Destination("todo_lists/{listId}") {
         fun createRoute(listId: Int) = "todo_lists/$listId"
     }
+    data object Terms : Destination("terms")
+    data object Privacy : Destination("privacy")
 }

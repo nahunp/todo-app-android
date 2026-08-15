@@ -67,18 +67,27 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // The frontend's static site (not the API — a different Azure
-        // resource entirely), specifically frontend/public/
-        // mobile-captcha.html in the web repo. Same for every build type,
-        // unlike API_BASE_URL below — there's no "local" version of this
-        // worth standing up; the deployed page works fine for local dev
-        // too and there's nothing to run locally to replace it. See
-        // TurnstileCaptchaView.kt for how this gets used.
+        // All three point at the frontend's static site (not the API — a
+        // different Azure resource entirely). Same for every build type,
+        // unlike API_BASE_URL below — there's no "local" version of any
+        // of these worth standing up; the deployed site works fine for
+        // local dev too. Deliberately NOT built from a shared
+        // FRONTEND_BASE_URL constant referenced across fields — AGP
+        // alphabetizes buildConfigField entries in the generated file
+        // regardless of declaration order here, which put a field
+        // referencing FRONTEND_BASE_URL *before* it in the generated
+        // class and failed with a genuine javac "illegal forward
+        // reference" (confirmed live, not a hypothetical). Each is
+        // spelled out in full instead.
         buildConfigField(
             "String",
             "CAPTCHA_PAGE_URL",
             "\"https://zealous-meadow-0c73a9610.7.azurestaticapps.net/mobile-captcha.html\"",
         )
+        // The web repo's own Terms/Privacy pages, reused rather than
+        // duplicated — see LegalWebViewScreen.kt's doc comment.
+        buildConfigField("String", "TERMS_URL", "\"https://zealous-meadow-0c73a9610.7.azurestaticapps.net/terms\"")
+        buildConfigField("String", "PRIVACY_URL", "\"https://zealous-meadow-0c73a9610.7.azurestaticapps.net/privacy\"")
     }
 
     // Same runtime-config idea as the web frontend's window.__appConfig /

@@ -2,6 +2,7 @@ package com.nahunp.todoapp.presentation.auth.login
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,6 +25,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit,
+    onOpenTerms: () -> Unit,
+    onOpenPrivacy: () -> Unit,
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -88,6 +91,14 @@ fun LoginScreen(
 
         TextButton(onClick = onNavigateToRegister) {
             Text("Don't have an account? Register")
+        }
+
+        // Same footer links the web app has, reused via WebView — see
+        // LegalWebViewScreen.kt's doc comment for why this isn't
+        // duplicated text.
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(onClick = onOpenTerms) { Text("Terms of Service", style = MaterialTheme.typography.bodySmall) }
+            TextButton(onClick = onOpenPrivacy) { Text("Privacy Policy", style = MaterialTheme.typography.bodySmall) }
         }
     }
 }

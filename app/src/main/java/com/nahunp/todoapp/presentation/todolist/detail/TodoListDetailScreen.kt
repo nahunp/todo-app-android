@@ -1,5 +1,6 @@
 package com.nahunp.todoapp.presentation.todolist.detail
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nahunp.todoapp.domain.model.DueDateState
 import com.nahunp.todoapp.domain.model.TodoItem
+import com.nahunp.todoapp.presentation.components.RenameDialog
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -49,11 +51,23 @@ fun TodoListDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var itemPickingDueDate by remember { mutableStateOf<Int?>(null) }
+    var renamingList by remember { mutableStateOf(false) }
+    var renamingItem by remember { mutableStateOf<TodoItem?>(null) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.list?.name?.ifBlank { "(untitled)" } ?: "Todo List") },
+                title = {
+                    Text(
+                        state.list?.name?.ifBlank { "(untitled)" } ?: "Todo List",
+                        // Tap the title to rename the list — no separate
+                        // edit icon needed for something this
+                        // low-frequency, and it's discoverable the same
+                        // way tapping a title to rename it is on plenty
+                        // of real apps.
+                        modifier = Modifier.clickable(enabled = state.list != null) { renamingList = true },
+                    )
+                },
                 // Text arrow, not an Icon — same reasoning as the rest of
                 // this app avoiding the material-icons-core dependency for
                 // one glyph; matches the web frontend's own "← Back" link
@@ -93,6 +107,7 @@ fun TodoListDetailScreen(
                             item = item,
                             onToggleDone = { viewModel.toggleDone(item.id, item.isDone) },
                             onRemove = { viewModel.removeItem(item.id) },
+                            onRename = { renamingItem = item },
                             onCyclePriority = { viewModel.cyclePriority(item.id, item.priority) },
                             onCycleCategory = { viewModel.cycleCategory(item.id, item.category) },
                             onDueDateClick = { itemPickingDueDate = item.id },
@@ -125,6 +140,30 @@ fun TodoListDetailScreen(
             DatePicker(state = datePickerState)
         }
     }
+
+    if (renamingList && state.list != null) {
+        RenameDialog(
+            title = "Rename list",
+            initialValue = state.list!!.name,
+            onConfirm = { newName ->
+                viewModel.renameList(newName)
+                renamingList = false
+            },
+            onDismiss = { renamingList = false },
+        )
+    }
+
+    renamingItem?.let { item ->
+        RenameDialog(
+            title = "Rename item",
+            initialValue = item.title,
+            onConfirm = { newTitle ->
+                viewModel.renameItem(item.id, newTitle)
+                renamingItem = null
+            },
+            onDismiss = { renamingItem = null },
+        )
+    }
 }
 
 @Composable
@@ -132,6 +171,7 @@ private fun TodoItemRow(
     item: TodoItem,
     onToggleDone: () -> Unit,
     onRemove: () -> Unit,
+    onRename: () -> Unit,
     onCyclePriority: () -> Unit,
     onCycleCategory: () -> Unit,
     onDueDateClick: () -> Unit,
@@ -141,7 +181,7 @@ private fun TodoItemRow(
             Checkbox(checked = item.isDone, onCheckedChange = { onToggleDone() })
             Text(
                 item.title,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).clickable(onClick = onRename),
                 textDecoration = if (item.isDone) TextDecoration.LineThrough else null,
                 color = if (item.isDone) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
             )

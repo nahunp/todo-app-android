@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Simple checkmark glyph in the Cloud Dancer accent color, centered in
-     the adaptive icon's 66dp safe zone. Placeholder — worth a real design
-     pass once the app has an actual visual identity beyond "ported from
-     the web frontend's palette." -->
+<!-- Bold white checkmark, sized and centered for the adaptive icon's
+     ~66dp safe zone (system launchers crop/mask outside that circle —
+     the earlier, thinner version bled too close to the edge and read as
+     a smudge at real launcher sizes, not a checkmark). Still a
+     placeholder in the sense that it's not a designed brand mark, but
+     legible now, which the first attempt wasn't. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:pathData="M30,56 L46,72 L80,38"
-        android:strokeColor="#4E76AC"
-        android:strokeWidth="10"
+        android:pathData="M32,55 L47,70 L78,36"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="12"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="#00000000" />

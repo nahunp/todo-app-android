@@ -22,10 +22,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.nahunp.todoapp.domain.model.TodoList
+import com.nahunp.todoapp.presentation.components.RenameDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +40,7 @@ fun TodoListScreen(
     viewModel: TodoListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    var renamingList by remember { mutableStateOf<TodoList?>(null) }
 
     LaunchedEffect(state.loggedOut) {
         if (state.loggedOut) onLoggedOut()
@@ -91,6 +97,7 @@ fun TodoListScreen(
                                     .clickable { onOpenList(list.id) },
                                 color = MaterialTheme.colorScheme.primary,
                             )
+                            TextButton(onClick = { renamingList = list }) { Text("Rename") }
                             // No double-click/double-delete guard yet —
                             // same open item the web frontend's daily notes
                             // flagged (todo-list.ts's delete button), not
@@ -105,5 +112,17 @@ fun TodoListScreen(
                 }
             }
         }
+    }
+
+    renamingList?.let { list ->
+        RenameDialog(
+            title = "Rename list",
+            initialValue = list.name,
+            onConfirm = { newName ->
+                viewModel.renameList(list.id, newName)
+                renamingList = null
+            },
+            onDismiss = { renamingList = null },
+        )
     }
 }

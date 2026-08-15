@@ -59,6 +59,10 @@ class TodoListDetailViewModel @Inject constructor(
         }
     }
 
+    fun renameList(newName: String) = runAndReload { repository.renameTodoList(listId, newName) }
+
+    fun renameItem(itemId: Int, newTitle: String) = runAndReload { repository.renameTodoItem(listId, itemId, newTitle) }
+
     fun toggleDone(itemId: Int, currentlyDone: Boolean) = runAndReload {
         if (currentlyDone) repository.reopenTodoItem(listId, itemId) else repository.completeTodoItem(listId, itemId)
     }

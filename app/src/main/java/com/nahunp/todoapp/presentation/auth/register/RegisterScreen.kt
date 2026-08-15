@@ -2,12 +2,14 @@ package com.nahunp.todoapp.presentation.auth.register
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,6 +23,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
+    onOpenTerms: () -> Unit,
+    onOpenPrivacy: () -> Unit,
     viewModel: RegisterViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -69,6 +73,11 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(if (state.isLoading) "Creating account…" else "Register")
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(onClick = onOpenTerms) { Text("Terms of Service", style = MaterialTheme.typography.bodySmall) }
+            TextButton(onClick = onOpenPrivacy) { Text("Privacy Policy", style = MaterialTheme.typography.bodySmall) }
         }
     }
 }
