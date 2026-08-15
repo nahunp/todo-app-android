@@ -16,6 +16,14 @@ happens to share a monorepo. The web repo's backend is the one and only
 source of truth for the API contract (`docs/api/openapi.json` there);
 this repo consumes it, never redefines it.
 
+**This is a deliberate decision, not a default**: web, this Android app,
+and the future iOS app all share **one** backend and **one** database —
+same account, same data, regardless of which client you're using. See
+the web repo's CLAUDE.md, "Multi-client architecture" section, for the
+full reasoning (and for what sharing a backend does *not* mean — CAPTCHA
+and push notifications still need client-type-aware handling, covered
+in Open Questions below).
+
 **Read the web repo's CLAUDE.md too, at least once.** Auth model,
 ownership rules (404 not 403 for non-owners), the enums-serialize-as-
 strings convention, the API versioning rationale, the secrets policy —
@@ -174,7 +182,9 @@ should use once you have a real project.
   platform only, gated server-side by client type, or (c) drop the
   CAPTCHA requirement for mobile clients specifically and lean on
   rate-limiting instead. This needs a backend-side decision too (the web
-  repo owns `RegisterCommand`), not just an Android-side one.
+  repo owns `RegisterCommand`), not just an Android-side one — this is
+  explicitly the one piece the "shared backend" decision (see below)
+  still requires client-type-aware handling for, not a separate backend.
 - **No auth guard equivalent yet.** The web frontend has a functional
   route guard (`authGuard`, redirects to `/login` if unauthenticated) —
   `TodoNavHost` here always starts at Login regardless of whether a
