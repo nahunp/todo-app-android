@@ -21,6 +21,14 @@ gradle/gradle-daemon-jvm.properties
 # section for why and how to get your own.
 app/google-services.json
 
+# Release signing — the actual key that gets used for every Play Store
+# update from here on. Losing it is recoverable (Play App Signing lets
+# Google reset your upload key), but it should never be in git history
+# regardless. See CLAUDE.md's "Release signing" section for what's here
+# and how to regenerate it if needed.
+keystore/
+keystore.properties
+
 # Build outputs
 *.apk
 *.aab

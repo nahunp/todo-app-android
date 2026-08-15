@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     // No org.jetbrains.kotlin.android — AGP 9.x's built-in Kotlin support
     // replaces it (see the root build.gradle.kts comment).
@@ -35,6 +37,21 @@ if (hasFirebaseConfig) {
             "(Crashlytics/Analytics/Messaging won't initialize). See " +
             "CLAUDE.md's Firebase section to set up a real project."
     )
+}
+
+// Release signing — keystore.properties (project root, gitignored, never
+// committed — see CLAUDE.md's "Release signing" section) holds the actual
+// keystore path/passwords. Loaded conditionally, same reasoning as the
+// Firebase config above: CI has no keystore and shouldn't need one — a
+// release build there is for catching R8/shrinking regressions early
+// (isMinifyEnabled below), not for producing something to actually
+// upload, so it's allowed to come out unsigned rather than failing the
+// whole build the way the Firebase plugins used to.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = if (keystorePropertiesFile.exists()) {
+    Properties().apply { load(keystorePropertiesFile.inputStream()) }
+} else {
+    null
 }
 
 android {
@@ -84,6 +101,17 @@ android {
     val apiBaseUrl = (project.findProperty("apiBaseUrl") as String?)
         ?: "https://todoapp-api-us3zbx.azurewebsites.net"
 
+    signingConfigs {
+        if (keystoreProperties != null) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
@@ -95,6 +123,9 @@ android {
             // Same production API origin the web frontend's config.js points
             // at — see the web repo's README.md Deployment section.
             buildConfigField("String", "API_BASE_URL", "\"https://todoapp-api-us3zbx.azurewebsites.net\"")
+            if (keystoreProperties != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

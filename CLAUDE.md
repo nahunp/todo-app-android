@@ -141,6 +141,38 @@ different or Android-specific.
   requests with 401 until the user logs in again. Worth a real "session
   expired, please log in again" UX once this matters.
 
+## Release signing — configured, first real signed build verified live
+
+`app/build.gradle.kts` reads `keystore.properties` (project root,
+gitignored, never committed) if it exists, and wires a `release`
+`signingConfig` from it; CI and anyone without that file still build fine
+(`release` just comes out unsigned — the point of a release build in CI
+is catching R8/shrinking regressions, not producing something to
+actually upload). Same conditional-application pattern as the Firebase
+plugins above.
+
+- Keystore lives at `keystore/todoapp-upload.jks`, also gitignored, a
+  PKCS12 keystore generated with `keytool` (30-year validity — Google's
+  own recommendation, to never need regenerating). **PKCS12 quirk hit
+  live**: it forces the store password and key password to be the
+  *same* value — `keytool` silently ignores a separately-specified
+  `-keypass` and warns about it rather than erroring, which is exactly
+  the kind of thing that looks like it worked until the resulting
+  keystore fails to decrypt. Verified by actually opening the generated
+  keystore with the password immediately after creating it, not assumed.
+- This is an **upload key**, not the real Play Store signing key — Play
+  App Signing (Google's default for new apps) re-signs with a key Google
+  holds; losing this one is recoverable via Google's own upload-key-reset
+  flow, not catastrophic, but it should still never end up in git history.
+- **First real signed release build verified live**: `./gradlew
+  :app:bundleRelease` — this exercises R8 minification/shrinking for the
+  first time since the scaffold was created (`isMinifyEnabled = true` had
+  never actually been run before). Succeeded clean, and the resulting
+  `.aab`'s signature was independently verified with `jarsigner -verify`
+  (`jar verified.` — the self-signed-cert/no-timestamp warnings jarsigner
+  prints are normal and expected for any Android app signing key, not
+  specific to this one).
+
 ## Firebase — wired, not configured
 
 `app/build.gradle.kts` depends on the Crashlytics/Analytics/Messaging
