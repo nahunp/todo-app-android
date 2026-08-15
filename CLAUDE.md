@@ -276,10 +276,23 @@ it builds the same way any fresh clone does, Firebase present but inert.
   web repo's actual `/terms`/`/privacy` pages via `WebView`
   (`BuildConfig.TERMS_URL`/`PRIVACY_URL`), same reuse-not-duplicate
   reasoning as the CAPTCHA page. Linked from both Login and Register.
-- **No offline story.** Every screen hits the network directly, no local
-  cache/Room database. Fine for a template; a real app probably wants at
-  least a "show the last-known list while refreshing" cache before this
-  ships.
+- **No offline story yet — spec'd, not built.** Every screen hits the
+  network directly, no local cache/Room database. Diego's call on the
+  actual product behavior (2026-08-15): the app should be usable with no
+  connection at all, not just tolerant of a flaky one —
+  - View and fully edit lists/items while offline: create, rename,
+    complete/reopen, set priority/category/due date, delete — everything
+    except registration (auth needs the network no matter what).
+  - Local writes queue while offline; on reconnect, sync runs
+    automatically and **remote wins** on conflict (server state
+    overwrites local, not merged field-by-field). Simple and predictable
+    over clever — acceptable since this is a single-user-per-account todo
+    list, not a multi-editor doc.
+  - Needs: a local DB (Room, most likely) as the source of truth for
+    reads, a pending-mutations queue for writes made offline, a
+    connectivity listener to trigger sync on reconnect, and a sync
+    routine that pushes the queue then pulls-and-overwrites from the
+    server. Not started — next real feature to build.
 - **No double-submit guard** on delete (same open item as the web
   frontend's own daily notes flagged for its delete button, also still
   unfixed there as of this writing).
