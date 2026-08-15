@@ -49,6 +49,19 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // The frontend's static site (not the API — a different Azure
+        // resource entirely), specifically frontend/public/
+        // mobile-captcha.html in the web repo. Same for every build type,
+        // unlike API_BASE_URL below — there's no "local" version of this
+        // worth standing up; the deployed page works fine for local dev
+        // too and there's nothing to run locally to replace it. See
+        // TurnstileCaptchaView.kt for how this gets used.
+        buildConfigField(
+            "String",
+            "CAPTCHA_PAGE_URL",
+            "\"https://zealous-meadow-0c73a9610.7.azurestaticapps.net/mobile-captcha.html\"",
+        )
     }
 
     // Same runtime-config idea as the web frontend's window.__appConfig /

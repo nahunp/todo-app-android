@@ -13,16 +13,12 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * NOTE: registration is not actually usable yet. The backend's
- * RegisterCommand requires a verified Cloudflare Turnstile captchaToken
- * (see the web repo's CLAUDE.md, Auth section) — Turnstile is a web
- * widget, there's no Android SDK for it. Passing an empty/fake token here
- * will just get a 400 from the backend every time. See CLAUDE.md's "Open
- * questions" for the real options (a WebView-hosted Turnstile challenge,
- * swap to a mobile-appropriate provider like Play Integrity / SafetyNet's
- * successor for this platform only, or drop the captcha requirement for
- * mobile clients and rely on rate-limiting instead) — needs a decision
- * before this screen is more than a placeholder.
+ * CAPTCHA is real now, not a placeholder — TurnstileCaptchaView loads the
+ * web repo's frontend/public/mobile-captcha.html in a WebView and hands
+ * the resulting token to onCaptchaTokenReceived below. See that file's
+ * own comment and the web repo's CLAUDE.md, "Multi-client architecture,"
+ * for the full reasoning (no backend change needed — the backend never
+ * cared where a captchaToken came from).
  */
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
@@ -36,23 +32,41 @@ class RegisterViewModel @Inject constructor(
 
     fun onPasswordChange(password: String) = _uiState.update { it.copy(password = password, error = null) }
 
+    // A blank token means the widget hasn't produced one yet, or a
+    // previously-issued one expired/errored (see mobile-captcha.html's
+    // expired-callback/error-callback, both of which send "" back) —
+    // either way, submit() below refuses to proceed without a real one.
+    fun onCaptchaTokenReceived(token: String) = _uiState.update { it.copy(captchaToken = token) }
+
     fun submit() {
         val state = _uiState.value
         if (state.email.isBlank() || state.password.isBlank()) {
             _uiState.update { it.copy(error = "Email and password required") }
             return
         }
+        if (state.captchaToken.isBlank()) {
+            _uiState.update { it.copy(error = "Please complete the verification challenge.") }
+            return
+        }
 
         _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
             try {
-                // See the class doc comment — this captchaToken is a
-                // placeholder and will be rejected server-side until the
-                // open CAPTCHA question above is resolved.
-                authRepository.register(state.email, state.password, captchaToken = "")
+                authRepository.register(state.email, state.password, state.captchaToken)
                 _uiState.update { it.copy(isLoading = false, registeredSuccessfully = true) }
             } catch (e: ApiException) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                // A Turnstile token is single-use — a failed submit (e.g.
+                // a weak password rejected by Identity) needs a fresh
+                // one, not a stale token that'll just fail verification
+                // again on retry. Same reasoning as the web frontend's
+                // register.ts, which resets its widget on error for
+                // exactly this reason; there's no equivalent "reset" call
+                // for this WebView-hosted widget, so the whole captcha
+                // state just gets cleared, forcing the WebView's own
+                // reload (see RegisterScreen) to get a new token.
+                _uiState.update {
+                    it.copy(isLoading = false, error = e.message, captchaToken = "", captchaResetKey = it.captchaResetKey + 1)
+                }
             }
         }
     }

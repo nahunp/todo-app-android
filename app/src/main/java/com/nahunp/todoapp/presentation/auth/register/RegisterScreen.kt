@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -34,14 +35,6 @@ fun RegisterScreen(
     ) {
         Text("Register", style = MaterialTheme.typography.headlineSmall)
 
-        // See RegisterViewModel's doc comment — CAPTCHA isn't wired up yet,
-        // this will currently fail server-side. Visible on purpose rather
-        // than hidden, so it's obvious this screen isn't done.
-        Text(
-            "Registration isn't functional yet — see RegisterViewModel's doc comment.",
-            color = MaterialTheme.colorScheme.error,
-        )
-
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
         OutlinedTextField(
@@ -61,9 +54,18 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
+        // Keyed on captchaResetKey so a failed submit (which clears the
+        // token — Turnstile tokens are single-use) forces this WebView to
+        // be disposed and recreated, reloading the page and getting a
+        // fresh one. See TurnstileCaptchaView's and RegisterViewModel's
+        // own doc comments.
+        key(state.captchaResetKey) {
+            TurnstileCaptchaView(onToken = viewModel::onCaptchaTokenReceived)
+        }
+
         Button(
             onClick = viewModel::submit,
-            enabled = !state.isLoading,
+            enabled = !state.isLoading && state.captchaToken.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(if (state.isLoading) "Creating account…" else "Register")

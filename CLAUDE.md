@@ -179,19 +179,17 @@ it builds the same way any fresh clone does, Firebase present but inert.
 
 ## Open questions (need a decision, not yet made)
 
-- **CAPTCHA on registration.** The backend's `RegisterCommand` requires a
-  verified Cloudflare Turnstile token (web repo, `Auth` section in its
-  CLAUDE.md). There's no Android SDK for Turnstile. `RegisterViewModel`
-  currently sends an empty token, which the backend will always reject.
-  Real options, not yet decided between: (a) host the Turnstile challenge
-  in a `WebView` and extract the token via a JS bridge, (b) use a
-  mobile-native attestation approach (Play Integrity API) for this
-  platform only, gated server-side by client type, or (c) drop the
-  CAPTCHA requirement for mobile clients specifically and lean on
-  rate-limiting instead. This needs a backend-side decision too (the web
-  repo owns `RegisterCommand`), not just an Android-side one — this is
-  explicitly the one piece the "shared backend" decision (see below)
-  still requires client-type-aware handling for, not a separate backend.
+- ~~CAPTCHA on registration~~ **Done** — went with option (a), a
+  `WebView`-hosted Turnstile challenge. `TurnstileCaptchaView.kt` loads
+  the web repo's `frontend/public/mobile-captcha.html` (a new static page
+  there, outside the Angular app) via `BuildConfig.CAPTCHA_PAGE_URL`, and
+  gets the token back through a `window.AndroidCaptchaBridge.onToken(...)`
+  JS interface. No backend change needed at all —
+  `TurnstileCaptchaService` already just verifies whatever token it's
+  given, regardless of origin. Registration is now fully functional, not
+  a placeholder. See the web repo's CLAUDE.md, "Multi-client
+  architecture," for the full writeup (this was the one piece that
+  decision still needed client-type-aware handling for).
 - ~~No auth guard~~ **Done** — `AppEntryViewModel` checks
   `AuthRepository.isAuthenticated` once before `NavHost` is even composed
   (Compose Navigation needs a concrete `startDestination` up front, so
