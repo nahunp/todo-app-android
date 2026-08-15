@@ -2,15 +2,22 @@ package com.nahunp.todoapp.presentation.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 // No dark-mode-specific palette in the web frontend yet either (styles.css
-// has one fixed :root palette) — this darkColorScheme is a straight
-// Material3 default, not a deliberate Cloud-Dancer-dark variant. Worth
-// designing a real one before this app ships, not before then.
+// has one fixed :root palette) — Cloud Dancer's brand standards were never
+// designed with a dark variant in mind. A first attempt here
+// (darkColorScheme() only overriding primary/error, leaving
+// background/surface/onBackground/onSurface at Material3's stock dark
+// defaults) shipped broken — confirmed live on a real device: several
+// texts and buttons were unreadable, dark-on-dark or light-on-light,
+// because the scheme was internally inconsistent (Cloud Dancer's light
+// accent colors against Material3's generic dark surfaces, not a
+// deliberately designed pairing). Forced to light-only until there's a
+// real Cloud-Dancer-dark palette to replace this with, not just "flip a
+// boolean and hope the generic defaults look fine."
 private val LightColors = lightColorScheme(
     primary = CloudDancerAccent,
     error = CloudDancerAccent2,
@@ -20,19 +27,10 @@ private val LightColors = lightColorScheme(
     onSurface = CloudDancerText,
 )
 
-private val DarkColors = darkColorScheme(
-    primary = CloudDancerAccent,
-    error = CloudDancerAccent2,
-)
-
 @Composable
-fun TodoAppTheme(
-    darkTheme: Boolean = androidx.compose.foundation.isSystemInDarkTheme(),
-    content: @Composable () -> Unit,
-) {
-    val colorScheme = if (darkTheme) DarkColors else LightColors
+fun TodoAppTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = LightColors,
         typography = Typography(),
         content = content,
     )

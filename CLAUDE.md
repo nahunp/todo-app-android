@@ -219,6 +219,15 @@ it builds the same way any fresh clone does, Firebase present but inert.
   a dropdown (category) and a segmented control (priority) would be a
   more honest UI than "tap repeatedly and hope." Deliberately simple for
   a first pass, not a final design.
+- **Dark mode is forced off** (`TodoAppTheme` no longer reads
+  `isSystemInDarkTheme()` at all — see `Theme.kt`'s doc comment).
+  Confirmed live on a real device with system dark mode on: text and
+  buttons were unreadable, because the first dark scheme only overrode
+  `primary`/`error` and left everything else at Material3's generic dark
+  defaults — internally inconsistent against Cloud Dancer's light-only
+  palette, not a deliberate dark design. Needs a real Cloud-Dancer-dark
+  palette (the web frontend doesn't have one either) before re-enabling,
+  not just flipping the boolean back on.
 
 ## Contract bugs found building the detail screen
 
