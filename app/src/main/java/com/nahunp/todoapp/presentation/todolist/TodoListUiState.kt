@@ -1,5 +1,6 @@
 package com.nahunp.todoapp.presentation.todolist
 
+import com.nahunp.todoapp.domain.model.SyncStatus
 import com.nahunp.todoapp.domain.model.TodoList
 
 data class TodoListUiState(
@@ -9,4 +10,5 @@ data class TodoListUiState(
     val newListName: String = "",
     val loggedOut: Boolean = false,
     val deletingAccount: Boolean = false,
+    val syncStatus: SyncStatus = SyncStatus(),
 )

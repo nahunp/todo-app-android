@@ -39,6 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.nahunp.todoapp.domain.model.DueDateState
 import com.nahunp.todoapp.domain.model.TodoItem
 import com.nahunp.todoapp.presentation.components.RenameDialog
+import com.nahunp.todoapp.presentation.components.SyncStatusLine
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -81,6 +82,8 @@ fun TodoListDetailScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            SyncStatusLine(state.syncStatus)
+
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -93,8 +96,6 @@ fun TodoListDetailScreen(
                 )
                 Button(onClick = viewModel::addItem) { Text("Add") }
             }
-
-            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
             val list = state.list
             when {

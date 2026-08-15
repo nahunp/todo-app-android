@@ -3,6 +3,7 @@ package com.nahunp.todoapp.data.repository
 import com.nahunp.todoapp.core.datastore.TokenStore
 import com.nahunp.todoapp.core.network.TodoApiService
 import com.nahunp.todoapp.core.network.toApiException
+import com.nahunp.todoapp.data.local.LocalTodoDataSource
 import com.nahunp.todoapp.data.remote.dto.LoginRequestDto
 import com.nahunp.todoapp.data.remote.dto.RegisterRequestDto
 import com.nahunp.todoapp.domain.model.PasswordPolicy
@@ -16,6 +17,7 @@ import javax.inject.Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val api: TodoApiService,
     private val tokenStore: TokenStore,
+    private val localTodoDataSource: LocalTodoDataSource,
 ) : AuthRepository {
 
     override val isAuthenticated: Flow<Boolean> = tokenStore.tokenFlow.map { it != null }
@@ -55,6 +57,12 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun logout() {
         tokenStore.clear()
+        // Wipes the offline cache and any un-synced pending operations, so
+        // a different account signing in on this device never sees a
+        // stray previous account's lists (and nothing tries to push a
+        // dead account's queued changes to whichever account logs in
+        // next). See LocalTodoDataSource.clearAll's doc comment.
+        localTodoDataSource.clearAll()
     }
 
     override suspend fun deleteAccount() {

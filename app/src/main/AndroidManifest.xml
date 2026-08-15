@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Required for ConnectivityManager.registerNetworkCallback — see
+         core/connectivity/ConnectivityObserver.kt, the offline-sync
+         trigger. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Runtime-requested at first use, not just declared here — see
          NotificationPermission handling in the presentation layer once
          that's wired up. Required starting Android 13 (API 33) for any

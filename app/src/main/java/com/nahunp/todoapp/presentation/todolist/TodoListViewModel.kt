@@ -6,12 +6,12 @@ import com.nahunp.todoapp.core.network.ApiException
 import com.nahunp.todoapp.domain.repository.AuthRepository
 import com.nahunp.todoapp.domain.repository.TodoListRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class TodoListViewModel @Inject constructor(
@@ -23,17 +23,21 @@ class TodoListViewModel @Inject constructor(
     val uiState: StateFlow<TodoListUiState> = _uiState.asStateFlow()
 
     init {
-        load()
-    }
-
-    fun load() {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        // Local-first (see TodoListRepository's doc comment): this Flow is
+        // backed by the on-device cache, not a one-shot network call, so
+        // it emits immediately with whatever's cached (or empty, on first
+        // ever use) and keeps emitting as SyncManager's pulls/pushes
+        // update that cache -- no explicit reload() after a mutation
+        // needed anymore, unlike the pre-offline-support version of this
+        // class.
         viewModelScope.launch {
-            try {
-                val lists = repository.getTodoLists()
+            repository.observeTodoLists().collect { lists ->
                 _uiState.update { it.copy(lists = lists, isLoading = false) }
-            } catch (e: ApiException) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+        viewModelScope.launch {
+            repository.syncStatus.collect { status ->
+                _uiState.update { it.copy(syncStatus = status) }
             }
         }
     }
@@ -44,36 +48,17 @@ class TodoListViewModel @Inject constructor(
         val name = _uiState.value.newListName
         if (name.isBlank()) return
         viewModelScope.launch {
-            try {
-                repository.createTodoList(name)
-                _uiState.update { it.copy(newListName = "") }
-                load()
-            } catch (e: ApiException) {
-                _uiState.update { it.copy(error = e.message) }
-            }
+            repository.createTodoList(name)
+            _uiState.update { it.copy(newListName = "") }
         }
     }
 
     fun renameList(id: Int, newName: String) {
-        viewModelScope.launch {
-            try {
-                repository.renameTodoList(id, newName)
-                load()
-            } catch (e: ApiException) {
-                _uiState.update { it.copy(error = e.message) }
-            }
-        }
+        viewModelScope.launch { repository.renameTodoList(id, newName) }
     }
 
     fun deleteList(id: Int) {
-        viewModelScope.launch {
-            try {
-                repository.deleteTodoList(id)
-                load()
-            } catch (e: ApiException) {
-                _uiState.update { it.copy(error = e.message) }
-            }
-        }
+        viewModelScope.launch { repository.deleteTodoList(id) }
     }
 
     fun logout() {

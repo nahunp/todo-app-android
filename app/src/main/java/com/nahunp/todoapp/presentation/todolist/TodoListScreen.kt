@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nahunp.todoapp.domain.model.TodoList
 import com.nahunp.todoapp.presentation.components.RenameDialog
+import com.nahunp.todoapp.presentation.components.SyncStatusLine
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,6 +60,8 @@ fun TodoListScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            SyncStatusLine(state.syncStatus)
+
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
