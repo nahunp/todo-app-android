@@ -8,4 +8,5 @@ data class TodoListUiState(
     val error: String? = null,
     val newListName: String = "",
     val loggedOut: Boolean = false,
+    val deletingAccount: Boolean = false,
 )

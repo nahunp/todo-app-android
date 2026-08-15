@@ -56,4 +56,15 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun logout() {
         tokenStore.clear()
     }
+
+    override suspend fun deleteAccount() {
+        try {
+            api.deleteAccount()
+        } catch (t: Throwable) {
+            throw t.toApiException()
+        }
+        // Doesn't clear the token itself — see the interface doc comment.
+        // Callers (TodoListViewModel.deleteAccount()) call logout()
+        // explicitly after this succeeds.
+    }
 }

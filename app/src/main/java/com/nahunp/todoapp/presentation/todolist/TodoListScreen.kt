@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +42,7 @@ fun TodoListScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var renamingList by remember { mutableStateOf<TodoList?>(null) }
+    var confirmingAccountDeletion by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.loggedOut) {
         if (state.loggedOut) onLoggedOut()
@@ -111,6 +113,12 @@ fun TodoListScreen(
                     }
                 }
             }
+
+            // Same "danger zone" placement as the web frontend's todo-list
+            // page — low-prominence link, real confirm step behind it.
+            TextButton(onClick = { confirmingAccountDeletion = true }) {
+                Text("Delete my account", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 
@@ -123,6 +131,31 @@ fun TodoListScreen(
                 renamingList = null
             },
             onDismiss = { renamingList = null },
+        )
+    }
+
+    if (confirmingAccountDeletion) {
+        AlertDialog(
+            onDismissRequest = { if (!state.deletingAccount) confirmingAccountDeletion = false },
+            title = { Text("Delete your account?") },
+            text = { Text("This permanently deletes your account and all your lists. This can't be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.deleteAccount() },
+                    enabled = !state.deletingAccount,
+                ) {
+                    Text(
+                        if (state.deletingAccount) "Deleting…" else "Yes, delete everything",
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { confirmingAccountDeletion = false },
+                    enabled = !state.deletingAccount,
+                ) { Text("Cancel") }
+            },
         )
     }
 }

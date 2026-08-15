@@ -82,4 +82,17 @@ class TodoListViewModel @Inject constructor(
             _uiState.update { it.copy(loggedOut = true) }
         }
     }
+
+    fun deleteAccount() {
+        _uiState.update { it.copy(deletingAccount = true) }
+        viewModelScope.launch {
+            try {
+                authRepository.deleteAccount()
+                authRepository.logout()
+                _uiState.update { it.copy(loggedOut = true) }
+            } catch (e: ApiException) {
+                _uiState.update { it.copy(deletingAccount = false, error = e.message) }
+            }
+        }
+    }
 }

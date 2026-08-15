@@ -229,6 +229,15 @@ it builds the same way any fresh clone does, Firebase present but inert.
 
 ## Open questions (need a decision, not yet made)
 
+- ~~No account deletion~~ **Done** — Google Play policy requires apps
+  that support account creation to also offer account deletion (in-app
+  or via a web page). `AuthRepository.deleteAccount()` calls the
+  backend's new `DELETE /api/v1/auth/account`, wired into a "Delete my
+  account" action + confirm dialog on `TodoListScreen`. Backend already
+  cascades: deleting the Identity user deletes their lists and items too
+  (`TodoListConfiguration.cs`'s `OwnerId` foreign key). Full backend
+  writeup, including live verification (curl + `sqlcmd`, not just a unit
+  test), is in the web repo's `CLAUDE.md`.
 - ~~CAPTCHA on registration~~ **Done** — went with option (a), a
   `WebView`-hosted Turnstile challenge. `TurnstileCaptchaView.kt` loads
   the web repo's `frontend/public/mobile-captcha.html` (a new static page

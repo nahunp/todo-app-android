@@ -38,6 +38,13 @@ interface TodoApiService {
     @GET("api/v1/auth/password-policy")
     suspend fun getPasswordPolicy(): PasswordPolicyDto
 
+    // The one authorized route in an otherwise-unauthenticated group — see
+    // AuthEndpoints.cs's own comment on why. Deletes the caller's own
+    // account (the auth interceptor already attaches the Bearer token to
+    // every request that has one).
+    @DELETE("api/v1/auth/account")
+    suspend fun deleteAccount()
+
     @GET("api/v1/todolists")
     suspend fun getTodoLists(): List<TodoListDto>
 
